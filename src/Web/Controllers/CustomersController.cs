@@ -27,7 +27,7 @@ public class CustomersController : Controller
     }
 
     // GET: Customers/Details/5
-    public async Task<IActionResult> Details(int? id)
+    public async Task<IActionResult> Details(CustomerId? id)
     {
         if (id == null)
         {
@@ -66,7 +66,7 @@ public class CustomersController : Controller
     }
 
     // GET: Customers/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    public async Task<IActionResult> Edit(CustomerId? id)
     {
         if (id == null)
         {
@@ -86,9 +86,9 @@ public class CustomersController : Controller
     // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Firstname,Lastname,Version")] Customer customer)
+    public async Task<IActionResult> Edit(CustomerId id, [Bind("Id,Firstname,Lastname,Version")] Customer customer)
     {
-        if (id != customer.Id)
+        if (id.Value != customer.Id)
         {
             return NotFound();
         }
@@ -102,7 +102,7 @@ public class CustomersController : Controller
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!CustomerExists(customer.Id))
+                if (!CustomerExists(id))
                 {
                     return NotFound();
                 }
@@ -117,7 +117,7 @@ public class CustomersController : Controller
     }
 
     // GET: Customers/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    public async Task<IActionResult> Delete(CustomerId? id)
     {
         if (id == null)
         {
@@ -136,7 +136,7 @@ public class CustomersController : Controller
     // POST: Customers/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(CustomerId id)
     {
         var customer = await _context.GetCustomerAsync(id);
         _context.Customers.Remove(customer);
@@ -146,6 +146,6 @@ public class CustomersController : Controller
 
     private bool CustomerExists(CustomerId id)
     {
-        return _context.Customers.Any(e => e.Id == id);
+        return _context.Customers.Any(e => e.Id == id.Value);
     }
 }

@@ -34,15 +34,10 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(typeof(void),StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void),StatusCodes.Status404NotFound)]
     [ProducesDefaultResponseType()]
-    public async Task<IActionResult> Details(ProductId? id)
+    public async Task<IActionResult> Details(ProductId id)
     {
-        if (id == null)
-        {
-            return BadRequest();
-        }
-
         var product = await _context.Products
-            .SingleOrDefaultAsync(m => m.Id == id);
+            .SingleOrDefaultAsync(m => m.Id == id.Value);
         if (product == null)
         {
             return NotFound();

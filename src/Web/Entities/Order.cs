@@ -16,7 +16,13 @@ public class Order
     ///
     public DateTime OrderDate { get; init; }
     ///
-    public OrderId Id { get; init; }
+    [JsonIgnore]
+    public int Id { get; init; }
+    ///<summary>Id column used by API</summary>
+    ///<remarks>Cannot be used in LINQ</remarks>
+    [JsonPropertyName("id")]
+    public OrderId OrderId => new(Id);
+
     ///
     [JsonIgnore]
     public int Version { get; init; }

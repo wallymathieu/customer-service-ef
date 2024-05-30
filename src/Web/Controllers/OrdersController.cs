@@ -27,7 +27,7 @@ public class OrdersController : Controller
     }
 
     // GET: Orders/Details/5
-    public async Task<IActionResult> Details(int? id)
+    public async Task<IActionResult> Details(OrderId? id)
     {
         if (id == null)
         {
@@ -66,7 +66,7 @@ public class OrdersController : Controller
     }
 
     // GET: Orders/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    public async Task<IActionResult> Edit(OrderId? id)
     {
         if (id == null)
         {
@@ -85,9 +85,9 @@ public class OrdersController : Controller
     // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("OrderDate,Id,Version")] Order order)
+    public async Task<IActionResult> Edit(OrderId id, [Bind("OrderDate,Id,Version")] Order order)
     {
-        if (id != order.Id)
+        if (id.Value != order.Id)
         {
             return NotFound();
         }
@@ -101,7 +101,7 @@ public class OrdersController : Controller
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!OrderExists(order.Id))
+                if (!OrderExists(id))
                 {
                     return NotFound();
                 }
@@ -116,7 +116,7 @@ public class OrdersController : Controller
     }
 
     // GET: Orders/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    public async Task<IActionResult> Delete(OrderId? id)
     {
         if (id == null)
         {
@@ -134,7 +134,7 @@ public class OrdersController : Controller
     // POST: Orders/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(OrderId id)
     {
         var order = await _context.GetOrderAsync(id);
         _context.Orders.Remove(order);
@@ -144,6 +144,6 @@ public class OrdersController : Controller
 
     private bool OrderExists(OrderId id)
     {
-        return _context.Orders.Any(e => e.Id == id);
+        return _context.Orders.Any(e => e.Id == id.Value);
     }
 }
