@@ -8,11 +8,31 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SomeBasicEFApp.Web;
 using SomeBasicEFApp.Web.Data;
+using Testcontainers.MsSql;
 
 namespace SomeBasicEFApp.Tests;
 
-public class ApiFixture:IDisposable
+public class ApiFixture
 {
+    // ugly:
+    protected static Lazy<MsSqlContainer> _container = new(() =>
+    {
+        var _dbContainer = new MsSqlBuilder()
+           .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+           .WithPassword("Strong_password_123!")
+           .WithHostname(Guid.NewGuid().ToString("N"))
+           .Build();
+        _dbContainer.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        var opts = new DbContextOptionsBuilder()
+            .UseSqlServer(_dbContainer.GetConnectionString())
+            .Options;
+        using (var db = new CoreDbContext(opts))
+        {
+            db.Database.Migrate();
+        }
+        return _dbContainer;
+    });
+
     static TestServer Create()
     {
         return new TestServer(new WebHostBuilder()
@@ -26,12 +46,6 @@ public class ApiFixture:IDisposable
     public void Dispose()
     {
         _testServer.Dispose();
-        if (!File.Exists(db)) return;
-        try{ File.Delete(db); }
-        catch
-        {
-            // ignored
-        }
     }
     public TestServer Server=>_testServer;
 
@@ -43,7 +57,7 @@ public class ApiFixture:IDisposable
         }
         protected override void ConfigureDbContext(DbContextOptionsBuilder options)
         {
-            options.UseSqlite("Data Source=" + db);
+            options.UseSqlServer(_container.Value.GetConnectionString());
         }
         protected override void OnConfigured(IApplicationBuilder app, IWebHostEnvironment env)
         {
