@@ -12,12 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="TestData\TestData.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="../../src/Web/Web.csproj" />
   </ItemGroup>
 
