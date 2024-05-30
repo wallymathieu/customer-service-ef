@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,8 +12,7 @@ using SomeBasicEFApp.Web.Data;
 using Testcontainers.MsSql;
 
 namespace SomeBasicEFApp.Tests;
-
-public class ApiFixture
+public class DbFixture : IDisposable
 {
     // ugly:
     protected static Lazy<MsSqlContainer> _container = new(() =>
@@ -32,38 +32,34 @@ public class ApiFixture
         }
         return _dbContainer;
     });
+    public string ConnectionString => _container.Value.GetConnectionString();
+    public void Dispose()
+    {
+        _container.Value.DisposeAsync();
+    }
+}
 
-    static TestServer Create()
+public class ApiFixture: IDisposable
+{
+    DbFixture _dbFixture = new ();
+
+    TestServer Create()
     {
         return new TestServer(new WebHostBuilder()
             .UseKestrel()
             .UseContentRoot(Directory.GetCurrentDirectory())
-            .UseConfiguration(new ConfigurationBuilder().Build())
-            .UseStartup<TestStartup>()) { AllowSynchronousIO=true };
+            .UseConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>
+            {
+                {"ConnectionStrings:DefaultConnection",_dbFixture.ConnectionString}
+            }).Build())
+            .UseStartup<Startup>()) { AllowSynchronousIO=true };
     }
     private readonly TestServer _testServer;
     public ApiFixture() => _testServer = Create();
     public void Dispose()
     {
         _testServer.Dispose();
+        _dbFixture.Dispose();
     }
-    public TestServer Server=>_testServer;
-
-    const string db = "ApiFixture.db";
-    class TestStartup : Startup
-    {
-        public TestStartup(IConfiguration configuration, IWebHostEnvironment env) : base(configuration, env)
-        {
-        }
-        protected override void ConfigureDbContext(DbContextOptionsBuilder options)
-        {
-            options.UseSqlServer(_container.Value.GetConnectionString());
-        }
-        protected override void OnConfigured(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
-            var context = serviceScope.ServiceProvider.GetRequiredService<CoreDbContext>();
-            context.Database.Migrate();
-        }
-    }
+    public TestServer Server => _testServer;
 }
