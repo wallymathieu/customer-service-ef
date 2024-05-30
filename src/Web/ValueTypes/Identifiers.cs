@@ -24,8 +24,6 @@ public record struct CustomerId (int Value) : IValueType
                 ? val
                 : throw new ArgumentException());
     }
-    ///
-    public static implicit operator CustomerId(int d) => new CustomerId(d);
 }
     ///
 [TypeConverter(typeof(ParseTypeConverter<OrderId>)),
@@ -45,8 +43,6 @@ public record struct OrderId (int Value) : IValueType
                 ? val
                 : throw new ArgumentException());
     }
-    ///
-    public static implicit operator OrderId(int d) => new OrderId(d);
 }
     ///
 [TypeConverter(typeof(ParseTypeConverter<ProductId>)),
@@ -66,6 +62,4 @@ public record struct ProductId (int Value) : IValueType
                 ? val
                 : throw new ArgumentException());
     }
-    ///
-    public static implicit operator ProductId(int d) => new ProductId(d);
 }

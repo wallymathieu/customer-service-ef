@@ -15,7 +15,12 @@ public class Product
     [JsonIgnore]
     public IList<Order> Orders { get; init; } = new List<Order>();
     ///
-    public ProductId Id { get; init; }
+    [JsonIgnore]
+    public int Id { get; init; }
+    ///<summary>Id column used by API</summary>
+    ///<remarks>Cannot be used in LINQ</remarks>
+    [JsonPropertyName("id")]
+    public ProductId ProductId => new(Id);
     ///
     [JsonIgnore]
     public int Version { get; init; }

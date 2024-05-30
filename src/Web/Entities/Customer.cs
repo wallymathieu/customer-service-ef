@@ -8,7 +8,12 @@ namespace SomeBasicEFApp.Web.Entities;
 public class Customer
 {
     ///
-    public CustomerId Id { get; init; }
+    [JsonIgnore]
+    public int Id { get; init; }
+    ///<summary>Id column used by API</summary>
+    ///<remarks>Cannot be used in LINQ</remarks>
+    [JsonPropertyName("id")]
+    public CustomerId CustomerId => new(Id);
     ///
     public string? Firstname { get; set; }
     ///

@@ -18,12 +18,12 @@ public abstract class CustomerDataTests : IDisposable
     public CustomerDataTests() => DbContext = new CoreDbContext(Options);
     public abstract DbContextOptions Options { get; }
 
-    ProductId yoyoId = 1;
-    ProductId gumballsId = 2;
+    ProductId yoyoId = new(1);
+    ProductId gumballsId = new(2);
     [Fact]
     public void CanGetCustomerById()
     {
-        var customer = DbContext.GetCustomer(1);
+        var customer = DbContext.GetCustomer(new(1));
 
         Assert.NotNull(customer);
     }
@@ -53,18 +53,18 @@ public abstract class CustomerDataTests : IDisposable
     [Fact]
     public void CanFindProductById()
     {
-        var product = DbContext.Find<Product>(yoyoId);
+        var product = DbContext.Find<Product>(yoyoId.Value);
         Assert.NotNull(product);
     }
     [Fact]
     public void OrderContainsProduct()
     {
-        OrderId orderId = 1;
+        OrderId orderId = new(1);
         var o = DbContext.Orders
             .Include(order => order.Products)
-            .Single(order => order.Id == orderId);
+            .Single(order => order.Id == orderId.Value);
         Assert.NotNull(o.Products);
-        Assert.Contains(o.Products, p => p.Id == yoyoId);
+        Assert.Contains(o.Products, p => p.Id == yoyoId.Value);
     }
 
     [Fact]
@@ -86,10 +86,10 @@ public abstract class CustomerDataTests : IDisposable
     [Fact]
     public void OrderHasACustomer()
     {
-        OrderId orderId = 1;
+        OrderId orderId = new(1);
         var o = DbContext.Orders
             .Include(order => order.Customer)
-            .Single(order => order.Id == orderId);
+            .Single(order => order.Id == orderId.Value);
         Assert.NotNull(o.Customer);
         Assert.NotEmpty(o.Customer.Firstname);
     }
@@ -125,15 +125,15 @@ public abstract class CustomerDataTests : IDisposable
         {
             import.ParseConnections("OrderProduct", "Product", "Order", (productId, orderId) =>
             {
-                var product = session.GetProduct(productId);
-                var order = session.GetOrder(orderId);
+                var product = session.GetProduct(new(productId));
+                var order = session.GetOrder(new(orderId));
                 session.ProductOrders.Add(new ProductOrder { Order = order, Product = product });
             });
 
             import.ParseIntProperty("Order", "Customer", (orderId, customerId) =>
             {
-                var order = session.GetOrder(orderId);
-                order.Customer = session.GetCustomer(customerId);
+                var order = session.GetOrder(new(orderId));
+                order.Customer = session.GetCustomer(new(customerId));
             });
 
             session.SaveChanges();

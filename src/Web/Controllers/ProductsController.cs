@@ -30,7 +30,7 @@ public class ProductsController : Controller
     }
 
     // GET: Products/Details/5
-    public async Task<IActionResult> Details(int? id)
+    public async Task<IActionResult> Details(ProductId? id)
     {
         if (id == null)
         {
@@ -66,7 +66,7 @@ public class ProductsController : Controller
     }
 
     // GET: Products/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    public async Task<IActionResult> Edit(ProductId? id)
     {
         if (id == null)
         {
@@ -86,9 +86,9 @@ public class ProductsController : Controller
     // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Cost,Name,Id,Version")] Product product)
+    public async Task<IActionResult> Edit(ProductId id, [Bind("Cost,Name,Id,Version")] Product product)
     {
-        if (id != product.Id)
+        if (id.Value != product.Id)
         {
             return NotFound();
         }
@@ -102,7 +102,7 @@ public class ProductsController : Controller
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ProductExists(product.Id))
+                if (!ProductExists(id))
                 {
                     return NotFound();
                 }
@@ -117,7 +117,7 @@ public class ProductsController : Controller
     }
 
     // GET: Products/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    public async Task<IActionResult> Delete(ProductId? id)
     {
         if (id == null)
         {
@@ -136,7 +136,7 @@ public class ProductsController : Controller
     // POST: Products/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(ProductId id)
     {
         var product = await _context.GetProductAsync(id);
         _context.Products.Remove(product);
@@ -146,6 +146,6 @@ public class ProductsController : Controller
 
     private bool ProductExists(ProductId id)
     {
-        return _context.Products.Any(e => e.Id == id);
+        return _context.Products.Any(e => e.Id == id.Value);
     }
 }

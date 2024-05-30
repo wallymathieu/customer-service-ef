@@ -36,15 +36,10 @@ public class CustomersController : ControllerBase
     [ProducesResponseType(typeof(void),StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void),StatusCodes.Status404NotFound)]
     [ProducesDefaultResponseType()]
-    public async Task<IActionResult> Details(CustomerId? id)
+    public async Task<IActionResult> Details(CustomerId id)
     {
-        if (id == null)
-        {
-            return BadRequest();
-        }
-
         var customer = await _context.Customers
-            .SingleOrDefaultAsync(m => m.Id == id);
+            .SingleOrDefaultAsync(m => m.Id == id.Value);
         if (customer == null)
         {
             return NotFound();
@@ -87,7 +82,7 @@ public class CustomersController : ControllerBase
     [ProducesDefaultResponseType]
     public async Task<IActionResult> DeleteConfirmed(CustomerId id)
     {
-        var customer = await _context.Customers.SingleOrDefaultAsync(m => m.Id == id);
+        var customer = await _context.Customers.SingleOrDefaultAsync(m => m.Id == id.Value);
         if (customer is null) return NotFound();
         _context.Customers.Remove(customer);
         await _context.SaveChangesAsync();
