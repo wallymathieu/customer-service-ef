@@ -77,13 +77,5 @@ public class Startup
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
         });
-        OnConfigured(app, env);
-    }
-
-    protected virtual void OnConfigured(IApplicationBuilder app, IWebHostEnvironment env)
-    {
-        using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
-        var context = serviceScope.ServiceProvider.GetRequiredService<CoreDbContext>();
-        context.Database.Migrate();
     }
 }

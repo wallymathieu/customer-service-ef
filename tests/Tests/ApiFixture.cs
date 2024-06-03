@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -10,56 +11,55 @@ using Microsoft.Extensions.DependencyInjection;
 using SomeBasicEFApp.Web;
 using SomeBasicEFApp.Web.Data;
 using Testcontainers.MsSql;
+using Xunit;
 
 namespace SomeBasicEFApp.Tests;
-public class DbFixture : IDisposable
+public class DbFixture : IAsyncLifetime
 {
-    // ugly:
-    protected static Lazy<MsSqlContainer> _container = new(() =>
+    private readonly MsSqlContainer _dbContainer;
+
+    public DbFixture()
     {
-        var _dbContainer = new MsSqlBuilder()
+        _dbContainer = new MsSqlBuilder()
            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
            .WithPassword("Strong_password_123!")
            .WithHostname(Guid.NewGuid().ToString("N"))
            .Build();
-        _dbContainer.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-        var opts = new DbContextOptionsBuilder()
-            .UseSqlServer(_dbContainer.GetConnectionString())
-            .Options;
-        using (var db = new CoreDbContext(opts))
-        {
-            db.Database.Migrate();
-        }
-        return _dbContainer;
-    });
-    public string ConnectionString => _container.Value.GetConnectionString();
-    public void Dispose()
-    {
-        _container.Value.DisposeAsync();
     }
+
+    public string ConnectionString => _dbContainer.GetConnectionString();
+
+    public async Task DisposeAsync() => await _dbContainer.DisposeAsync();
+
+    public async Task InitializeAsync() => await _dbContainer.StartAsync();
 }
-
-public class ApiFixture: IDisposable
+public class ApiFixture : IAsyncLifetime
 {
-    DbFixture _dbFixture = new ();
+    private TestServer? _testServer;
+    private readonly DbFixture _dbFixture = new();
 
-    TestServer Create()
+    public async Task InitializeAsync()
     {
-        return new TestServer(new WebHostBuilder()
-            .UseKestrel()
-            .UseContentRoot(Directory.GetCurrentDirectory())
-            .UseConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>
-            {
-                {"ConnectionStrings:DefaultConnection",_dbFixture.ConnectionString}
-            }).Build())
-            .UseStartup<Startup>()) { AllowSynchronousIO=true };
+        await _dbFixture.InitializeAsync();
+        _testServer = 
+            new TestServer(new WebHostBuilder()
+                .UseKestrel()
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>{
+                    {"ConnectionStrings:DefaultConnection",_dbFixture.ConnectionString}
+                }).Build())
+                .UseStartup<Startup>())
+            { AllowSynchronousIO = true };
+        using var serviceScope = _testServer.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        var context = serviceScope.ServiceProvider.GetRequiredService<CoreDbContext>();
+        await context.Database.MigrateAsync();
     }
-    private readonly TestServer _testServer;
-    public ApiFixture() => _testServer = Create();
-    public void Dispose()
+
+    public async Task DisposeAsync()
     {
-        _testServer.Dispose();
-        _dbFixture.Dispose();
+        _testServer?.Dispose();
+        await _dbFixture.DisposeAsync();
     }
-    public TestServer Server => _testServer;
+
+    public TestServer Server => _testServer!;
 }
