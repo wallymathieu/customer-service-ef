@@ -77,15 +77,5 @@ public class Startup
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
         });
-        OnConfigured(app, env);
-    }
-
-    protected virtual void OnConfigured(IApplicationBuilder app, IWebHostEnvironment env)
-    {
-        // NOTE: This is usually not what you want unless you are OK with forward only migrations (that are backwards compatible and fast).
-        // You want to run migrations in a controlled manner and make sure to integrate that with the deployment process.
-        using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
-        var context = serviceScope.ServiceProvider.GetRequiredService<CoreDbContext>();
-        context.Database.Migrate();
     }
 }
