@@ -10,29 +10,37 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SomeBasicEFApp.Web;
 using SomeBasicEFApp.Web.Data;
+using Testcontainers.MsSql;
 using Xunit;
 
 namespace SomeBasicEFApp.Tests;
-public class DbFixture : IDisposable
+public class DbFixture : IAsyncLifetime
 {
-    const string db = "ApiFixture.db";
-    public string ConnectionString => "Data Source=" + db;
-    public void Dispose()
+    private readonly MsSqlContainer _dbContainer;
+
+    public DbFixture()
     {
-        if (!File.Exists(db)) return;
-        try { File.Delete(db); }
-        catch
-        {
-            // ignored
-        }
+        _dbContainer = new MsSqlBuilder()
+           .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+           .WithPassword("Strong_password_123!")
+           .WithHostname(Guid.NewGuid().ToString("N"))
+           .Build();
     }
+
+    public string ConnectionString => _dbContainer.GetConnectionString();
+
+    public async Task DisposeAsync() => await _dbContainer.DisposeAsync();
+
+    public async Task InitializeAsync() => await _dbContainer.StartAsync();
 }
 public class ApiFixture : IAsyncLifetime
 {
-    private readonly TestServer _testServer;
+    private TestServer? _testServer;
     private readonly DbFixture _dbFixture = new();
-    public ApiFixture()
+
+    public async Task InitializeAsync()
     {
+        await _dbFixture.InitializeAsync();
         _testServer = 
             new TestServer(new WebHostBuilder()
                 .UseKestrel()
@@ -40,33 +48,18 @@ public class ApiFixture : IAsyncLifetime
                 .UseConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>{
                     {"ConnectionStrings:DefaultConnection",_dbFixture.ConnectionString}
                 }).Build())
-                .UseStartup<UseSqliteStartup>())
+                .UseStartup<Startup>())
             { AllowSynchronousIO = true };
-    }
-
-    public async Task InitializeAsync()
-    {
         using var serviceScope = _testServer.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
         var context = serviceScope.ServiceProvider.GetRequiredService<CoreDbContext>();
         await context.Database.MigrateAsync();
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        _testServer.Dispose();
-        _dbFixture.Dispose();
-        return Task.CompletedTask;
+        _testServer?.Dispose();
+        await _dbFixture.DisposeAsync();
     }
 
-    public TestServer Server => _testServer;
-}
-class UseSqliteStartup : Startup
-{
-    public UseSqliteStartup(IConfiguration configuration, IWebHostEnvironment env) : base(configuration, env)
-    {
-    }
-    protected override void ConfigureDbContext(DbContextOptionsBuilder options)
-    {
-        options.UseSqlite(Configuration.GetConnectionString("DefaultConnection"));
-    }
+    public TestServer Server => _testServer!;
 }
